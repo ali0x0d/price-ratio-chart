@@ -1,6 +1,28 @@
-import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries, CrosshairMode } from 'lightweight-charts';
+
+const API_URL = 'https://api.dorostkar.dev/btcxau';
+const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 
 const container = document.getElementById('chart-container');
+
+async function fetchBars() {
+    if (!API_TOKEN) {
+        throw new Error('VITE_API_TOKEN is not set');
+    }
+
+    const response = await fetch(API_URL, {
+        headers: { Authorization: `Bearer ${API_TOKEN}` },
+    });
+
+    if (!response.ok) {
+        throw new Error(`the API answered ${response.status} ${response.statusText}`);
+    }
+
+    const bars = await response.json();
+
+    // the API sends unix milliseconds, lightweight-charts wants seconds
+    return bars.map((bar) => ({ ...bar, time: bar.time / 1000 }));
+}
 
 if (container) {
     const chart = createChart(container, {
@@ -14,12 +36,17 @@ if (container) {
             vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
             horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
         },
+        crosshair: {
+            // the default is Magnet, which snaps the horizontal line to the hovered bar's close
+            mode: CrosshairMode.Normal,
+        },
         rightPriceScale: {
             borderColor: 'rgba(197, 203, 206, 0.8)',
         },
         timeScale: {
             borderColor: 'rgba(197, 203, 206, 0.8)',
-            timeVisible: true,
+            // the default 0.5 is wider than 12 years of daily bars can fit, so fitContent() would clip the early years
+            minBarSpacing: 0.1,
         },
     });
 
@@ -29,25 +56,20 @@ if (container) {
         borderVisible: false,
         wickUpColor: '#26a69a',
         wickDownColor: '#ef5350',
+        // the ratio runs from 0.14 to 40.6, so two decimals would flatten the early years
+        priceFormat: { type: 'price', precision: 4, minMove: 0.0001 },
     });
-
-    const data = [
-        { time: '2026-06-15', open: 92.00,  high: 96.00,  low: 91.50,  close: 95.50  },
-        { time: '2026-06-16', open: 95.50,  high: 96.20,  low: 93.50,  close: 94.20  },
-        { time: '2026-06-17', open: 94.20,  high: 97.00,  low: 93.00,  close: 96.00  },
-        { time: '2026-06-18', open: 96.00,  high: 99.50,  low: 95.20,  close: 98.50  },
-        { time: '2026-06-19', open: 98.50,  high: 101.20, low: 97.00,  close: 100.00 },
-        { time: '2026-06-20', open: 100.00, high: 105.50, low: 98.20,  close: 103.40 },
-        { time: '2026-06-21', open: 103.40, high: 108.00, low: 102.10, close: 107.20 },
-        { time: '2026-06-22', open: 107.20, high: 112.50, low: 106.00, close: 110.10 },
-        { time: '2026-06-23', open: 110.10, high: 111.30, low: 105.20, close: 106.50 },
-        { time: '2026-06-24', open: 106.50, high: 109.80, low: 104.00, close: 108.90 },
-    ];
-
-    candlestickSeries.setData(data);
-    chart.timeScale().fitContent();
 
     window.addEventListener('resize', () => {
         chart.resize(container.clientWidth, container.clientHeight);
     });
+
+    fetchBars()
+        .then((bars) => {
+            candlestickSeries.setData(bars);
+            chart.timeScale().fitContent();
+        })
+        .catch((error) => {
+            console.error('Could not load the BTC/XAU ratio:', error);
+        });
 }
