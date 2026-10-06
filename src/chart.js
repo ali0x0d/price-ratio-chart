@@ -1,9 +1,10 @@
-import { createChart, CandlestickSeries, CrosshairMode } from 'lightweight-charts';
+import { createChart, CandlestickSeries, CrosshairMode, PriceScaleMode } from 'lightweight-charts';
 
 const API_URL = 'https://api.dorostkar.dev/btcxau';
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 
 const container = document.getElementById('chart-container');
+const logScaleToggle = document.getElementById('log-scale-toggle');
 
 async function fetchBars() {
     if (!API_TOKEN) {
@@ -58,6 +59,25 @@ if (container) {
         wickDownColor: '#ef5350',
         // the ratio runs from 0.14 to 40.6, so two decimals would flatten the early years
         priceFormat: { type: 'price', precision: 4, minMove: 0.0001 },
+    });
+
+    function placeLogScaleToggle() {
+        logScaleToggle.style.right = `${chart.priceScale('right').width() + 8}px`;
+        logScaleToggle.style.bottom = `${chart.timeScale().height() + 8}px`;
+    }
+
+    placeLogScaleToggle();
+    // fires whenever the axes relayout: on load, on resize, and when log's labels change the price scale's width
+    chart.timeScale().subscribeSizeChange(placeLogScaleToggle);
+
+    logScaleToggle.addEventListener('click', () => {
+        // a click flips the scale, so the new mode is the opposite of what the button reports now
+        const logarithmic = logScaleToggle.getAttribute('aria-pressed') !== 'true';
+
+        logScaleToggle.setAttribute('aria-pressed', logarithmic);
+        chart.priceScale('right').applyOptions({
+            mode: logarithmic ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
+        });
     });
 
     window.addEventListener('resize', () => {

@@ -15,14 +15,48 @@
         }
 
         #chart-container {
+            position: relative;
             width: 100%;
             height: 100%;
+        }
+
+        /* chart.js sets right and bottom, since only the chart knows how much room its axes take */
+        #log-scale-toggle {
+            position: absolute;
+            /* the chart's canvases take 1 and 2, and it puts its own attribution logo at 3 */
+            z-index: 3;
+            box-sizing: border-box;
+            width: 36px;
+            height: 22px;
+            padding: 0;
+            border: 1px solid #2a2e39;
+            border-radius: 3px;
+            background-color: #1e222d;
+            color: #b2b5be;
+            font: 600 11px sans-serif;
+            cursor: pointer;
+            transition: color 0.12s, background-color 0.12s, border-color 0.12s, box-shadow 0.12s;
+        }
+
+        #log-scale-toggle:hover {
+            border-color: #363a45;
+            color: #d1d4dc;
+        }
+
+        /* aria-pressed carries the on/off state, so the active look needs no extra class */
+        #log-scale-toggle[aria-pressed='true'] {
+            border-color: #2962ff;
+            background-color: #2962ff;
+            box-shadow: 0 0 0 3px rgba(41, 98, 255, 0.18);
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
 
-    <div id="chart-container"></div>
+    <div id="chart-container">
+        <button id="log-scale-toggle" type="button" aria-pressed="false">log</button>
+    </div>
 
     <script type="module" src="/src/chart.js"></script>
 </body>
