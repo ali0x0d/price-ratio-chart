@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "vite build --base=./"
+  },
   "dependencies": {
     "lightweight-charts": "^5.2.0"
   },
